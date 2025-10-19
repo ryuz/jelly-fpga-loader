@@ -5,6 +5,12 @@ jelly-fpga-client-rs を使った FPGA ユーティリティです。
 
 基本的にまだ KV-260 でしか動作確認しておりませんので、KV260 専用ツールと考えてください。
 
+## インストール方法
+
+```bash
+cargo install --git https://github.com/ryuz/jelly-fpga-loader.git
+```
+
 
 ## Usage
 
