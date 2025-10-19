@@ -1,0 +1,10 @@
+[package]
+name = "jelly-fpga-loader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jelly-fpga-client = { path = "../jelly-fpga-client-rs" }
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
+anyhow = "1.0"
