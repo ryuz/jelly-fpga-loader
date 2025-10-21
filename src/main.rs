@@ -200,17 +200,22 @@ async fn overlay(client: &mut JellyFpgaClient, dtbo_file: &str, bit_file: Option
             .and_then(|s| s.to_str())
             .ok_or_else(|| anyhow!("Invalid DTBO filename"))?;
         
-        client.upload_firmware_file(dtbo_name, dtbo_file).await
-            .map_err(|e| anyhow!("Failed to upload DTBO: {}", e))?;
+        if !client.upload_firmware_file(dtbo_name, dtbo_file).await
+            .map_err(|e| anyhow!("Failed to upload DTBO: {}", e))? {
+            return Err(anyhow!("Failed to upload DTBO file"));
+        }
+
         uploaded_files.push(dtbo_name.to_string());
         
         dtbo_name.to_string()
     };
     
     // Load DTBO
-    client.load_dtbo(&dtbo_name).await
-        .map_err(|e| anyhow!("Failed to load DTBO: {}", e))?;
-    
+    if !client.load_dtbo(&dtbo_name).await
+        .map_err(|e| anyhow!("Failed to load DTBO: {}", e))? {
+        return Err(anyhow!("Failed to apply DeviceTree Overlay"));
+    }
+
     // Clean up uploaded files after completion
     for filename in uploaded_files {
         client.remove_firmware(&filename).await
@@ -239,8 +244,10 @@ async fn register_accel(
             .ok_or_else(|| anyhow!("Invalid bitstream filename"))?;
         
         // Upload bitstream first
-        client.upload_firmware_file(bitstream_name, bitstream_file).await
-            .map_err(|e| anyhow!("Failed to upload bitstream: {}", e))?;
+        if !client.upload_firmware_file(bitstream_name, bitstream_file).await
+            .map_err(|e| anyhow!("Failed to upload bitstream: {}", e))? {
+            return Err(anyhow!("Failed to upload bitstream file"));
+        }
         
         // Convert to bin
         let bin_name = format!("{}.bin", bitstream_name);
@@ -255,8 +262,10 @@ async fn register_accel(
             .and_then(|s| s.to_str())
             .ok_or_else(|| anyhow!("Invalid bin filename"))?;
         
-        client.upload_firmware_file(bin_name, bitstream_file).await
-            .map_err(|e| anyhow!("Failed to upload bin file: {}", e))?;
+        if !client.upload_firmware_file(bin_name, bitstream_file).await
+            .map_err(|e| anyhow!("Failed to upload bin file: {}", e))? {
+            return Err(anyhow!("Failed to upload bin file"));
+        }
         
         bin_name.to_string()
     };
@@ -291,9 +300,11 @@ async fn register_accel(
             .and_then(|s| s.to_str())
             .ok_or_else(|| anyhow!("Invalid DTBO filename"))?;
         
-        client.upload_firmware_file(dtbo_name, dtbo_file).await
-            .map_err(|e| anyhow!("Failed to upload DTBO: {}", e))?;
-        
+        if !client.upload_firmware_file(dtbo_name, dtbo_file).await
+            .map_err(|e| anyhow!("Failed to upload DTBO: {}", e))? {
+            return Err(anyhow!("Failed to upload DTBO file"));
+        }
+
         dtbo_name.to_string()
     };
     
@@ -304,8 +315,10 @@ async fn register_accel(
             .and_then(|s| s.to_str())
             .ok_or_else(|| anyhow!("Invalid JSON filename"))?;
         
-        client.upload_firmware_file(json_name, json_file).await
-            .map_err(|e| anyhow!("Failed to upload JSON file: {}", e))?;
+        if !client.upload_firmware_file(json_name, json_file).await
+            .map_err(|e| anyhow!("Failed to upload JSON file: {}", e))? {
+            return Err(anyhow!("Failed to upload JSON file"));
+        }
         
         Some(json_name)
     } else {
@@ -367,8 +380,10 @@ async fn load(client: &mut JellyFpgaClient, accel_name: &str) -> Result<()> {
 async fn unload(client: &mut JellyFpgaClient, slot: i32) -> Result<()> {
     println!("Unloading accelerator from slot: {}", slot);
     
-    client.unload(slot).await
-        .map_err(|e| anyhow!("Failed to unload accelerator: {}", e))?;
+    if !client.unload(slot).await
+        .map_err(|e| anyhow!("Failed to unload accelerator: {}", e))? {
+        return Err(anyhow!("Failed to unload accelerator from slot {}", slot));
+    }
     
     println!("Accelerator unloaded successfully");
     Ok(())

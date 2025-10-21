@@ -1,1 +1,9 @@
 /target
+
+_*
+*_
+*_.*
+
+*.bit
+*.bin
+*.dtbo
