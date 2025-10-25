@@ -1,3 +1,5 @@
+English version is [here](README_en.md)
+
 # 概要
 
 [jelly-fpga-server](https://github.com/ryuz/jelly-fpga-server) を利用して FPGA に bitstream を書き込んだり、DeviceTree Overlay を適用したりするためのコマンドラインツールです。
