@@ -2,6 +2,12 @@
 name = "jelly-fpga-loader"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/ryuz/jelly-fpga-loader"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.tar.gz"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
 
 [dependencies]
 #jelly-fpga-client = { path = "../jelly-fpga-client-rs" }
