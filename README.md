@@ -27,7 +27,7 @@ cargo でのインストールは以下のコマンドで行います。
 cargo install --git https://github.com/ryuz/jelly-fpga-loader.git
 ```
 
-## バイナリをインストール
+## 高速にバイナリをインストール
 
 GitHub の [Releases](https://github.com/ryuz/jelly-fpga-loader/releases) ページから、対応する OS とアーキテクチャの最新版をダウンロードしてPATHの通ったディレクトリに展開してください。
 
