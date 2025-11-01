@@ -31,15 +31,7 @@ cargo install --git https://github.com/ryuz/jelly-fpga-loader.git
 
 GitHub の [Releases](https://github.com/ryuz/jelly-fpga-loader/releases) ページから、対応する OS とアーキテクチャの最新版をダウンロードしてPATHの通ったディレクトリに展開してください。
 
-もしくは cargo-binstall を利用すると簡単にインストールできます。
-
-cargo-binstall がインストールされていない場合は、以下のコマンドでインストールしてください。
-
-```bash
-curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-```
-
-次に、以下のコマンドで jelly-fpga-loader をインストールします。
+もしくは [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) をインストールしておけば下記のようにインストールすることもできます。
 
 ```bash
 cargo-binstall --git https://github.com/ryuz/jelly-fpga-loader.git jelly-fpga-loader
