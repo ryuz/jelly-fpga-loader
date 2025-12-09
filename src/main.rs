@@ -6,6 +6,8 @@ use anyhow::{Result, anyhow};
 #[derive(Parser)]
 #[command(name = "jelly-fpga-loader")]
 #[command(about = "FPGA utility tool using jelly-fpga-client-rs")]
+#[command(version)]
+#[command(long_version = get_long_version())]
 struct Cli {
     /// FPGA server IP address and port
     #[arg(short, long, default_value = "127.0.0.1:8051", global = true)]
@@ -13,6 +15,14 @@ struct Cli {
     
     #[command(subcommand)]
     command: Commands,
+}
+
+fn get_long_version() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION"),
+        "\n",
+        "Client version: ", env!("CARGO_PKG_VERSION")
+    )
 }
 
 #[derive(Subcommand)]
@@ -88,11 +98,18 @@ enum Commands {
         #[arg(long, default_value = "0")]
         remoteproc_id: u64,
     },
+    /// Show version information
+    Version,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    
+    // Special handling for version command - don't require server connection
+    if matches!(cli.command, Commands::Version) {
+        return show_version_standalone(&cli.ip).await;
+    }
     
     // Connect to FPGA server
     let server_addr = format!("http://{}", cli.ip);
@@ -129,6 +146,10 @@ async fn main() -> Result<()> {
         },
         Commands::RemoteprocStop { remoteproc_id } => {
             remoteproc_stop(&mut client, remoteproc_id).await?;
+        },
+        Commands::Version => {
+            // Already handled before connection
+            unreachable!()
         },
     }
     
@@ -461,8 +482,8 @@ async fn remoteproc_load(client: &mut JellyFpgaClient, elf_file: &str, remotepro
     }
     
     // Clean up uploaded file after completion
-    client.remove_firmware(filename).await
-        .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
+//    client.remove_firmware(filename).await
+//        .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
     
     println!("Remoteproc firmware loaded successfully");
     Ok(())
@@ -489,5 +510,28 @@ async fn remoteproc_stop(client: &mut JellyFpgaClient, remoteproc_id: u64) -> Re
     }
     
     println!("Remoteproc{} stopped successfully", remoteproc_id);
+    Ok(())
+}
+
+async fn show_version_standalone(ip: &str) -> Result<()> {
+    println!("Client version: {}", env!("CARGO_PKG_VERSION"));
+    
+    let server_addr = format!("http://{}", ip);
+    match JellyFpgaClient::connect(server_addr).await {
+        Ok(mut client) => {
+            match client.get_version().await {
+                Ok(server_version) => {
+                    println!("Server version: {}", server_version);
+                },
+                Err(e) => {
+                    println!("Server version: (error: {})", e);
+                }
+            }
+        },
+        Err(e) => {
+            println!("Server version: (unable to connect: {})", e);
+        }
+    }
+    
     Ok(())
 }
