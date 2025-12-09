@@ -131,3 +131,42 @@ jelly-fpga-loader dts2dtbo <dts file> <dtbo file>
 を指定すると、サーバーに dts ファイルを送って dtbo ファイルに変換します。
 
 オプションで --ip を指定しなかった場合はローカル(127.0.0.1:8051) に接続します。
+
+
+### remoteproc のダウンロード
+
+```bash
+jelly-fpga-loader remoteproc load <elf file> --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+を指定すると、サーバーに elf ファイルを送って remoteproc にロードします。
+
+オプションで --remoteproc-id を指定しなかった場合は remoteproc0 を利用します。
+
+オプションで --ip を指定しなかった場合はローカル(127.0.0.1:8051) に接続します。
+
+
+### remoteproc の実行開始
+
+```bash
+jelly-fpga-loader remoteproc start --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+を指定すると、サーバーの remoteproc を動作開始させます。
+
+オプションで --remoteproc-id を指定しなかった場合は remoteproc0 を利用します。
+
+オプションで --ip を指定しなかった場合はローカル(127.0.0.1:8051) に接続します。
+
+### remoteproc の実行停止
+
+```bash
+jelly-fpga-loader remoteproc stop --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+を指定すると、サーバーの remoteproc を動作停止させます。
+
+オプションで --remoteproc-id を指定しなかった場合は remoteproc0 を利用します。
+
+オプションで --ip を指定しなかった場合はローカル(127.0.0.1:8051) に接続します。
+

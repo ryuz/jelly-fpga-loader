@@ -6,6 +6,8 @@ use anyhow::{Result, anyhow};
 #[derive(Parser)]
 #[command(name = "jelly-fpga-loader")]
 #[command(about = "FPGA utility tool using jelly-fpga-client-rs")]
+#[command(version)]
+#[command(long_version = get_long_version())]
 struct Cli {
     /// FPGA server IP address and port
     #[arg(short, long, default_value = "127.0.0.1:8051", global = true)]
@@ -13,6 +15,14 @@ struct Cli {
     
     #[command(subcommand)]
     command: Commands,
+}
+
+fn get_long_version() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION"),
+        "\n",
+        "Client version: ", env!("CARGO_PKG_VERSION")
+    )
 }
 
 #[derive(Subcommand)]
@@ -68,11 +78,47 @@ enum Commands {
         /// Output DTBO file path
         dtbo_file: String,
     },
+    /// Remoteproc operations
+    Remoteproc {
+        #[command(subcommand)]
+        command: RemoteprocCommands,
+    },
+    /// Show version information
+    Version,
+}
+
+#[derive(Subcommand)]
+enum RemoteprocCommands {
+    /// Load remoteproc firmware
+    Load {
+        /// ELF file path
+        elf_file: String,
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
+    /// Start remoteproc
+    Start {
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
+    /// Stop remoteproc
+    Stop {
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    
+    // Special handling for version command - don't require server connection
+    if matches!(cli.command, Commands::Version) {
+        return show_version_standalone(&cli.ip).await;
+    }
     
     // Connect to FPGA server
     let server_addr = format!("http://{}", cli.ip);
@@ -100,6 +146,23 @@ async fn main() -> Result<()> {
         },
         Commands::Dts2dtbo { dts_file, dtbo_file } => {
             dts2dtbo(&mut client, &dts_file, &dtbo_file).await?;
+        },
+        Commands::Remoteproc { command } => {
+            match command {
+                RemoteprocCommands::Load { elf_file, remoteproc_id } => {
+                    remoteproc_load(&mut client, &elf_file, remoteproc_id).await?;
+                },
+                RemoteprocCommands::Start { remoteproc_id } => {
+                    remoteproc_start(&mut client, remoteproc_id).await?;
+                },
+                RemoteprocCommands::Stop { remoteproc_id } => {
+                    remoteproc_stop(&mut client, remoteproc_id).await?;
+                },
+            }
+        },
+        Commands::Version => {
+            // Already handled before connection
+            unreachable!()
         },
     }
     
@@ -409,5 +472,79 @@ async fn dts2dtbo(client: &mut JellyFpgaClient, dts_file: &str, dtbo_file: &str)
         .map_err(|e| anyhow!("Failed to write DTBO file '{}': {}", dtbo_file, e))?;
     
     println!("DTS to DTBO conversion completed successfully");
+    Ok(())
+}
+
+async fn remoteproc_load(client: &mut JellyFpgaClient, elf_file: &str, remoteproc_id: u64) -> Result<()> {
+    println!("Loading remoteproc{}: {}", remoteproc_id, elf_file);
+    
+    // Extract filename for the firmware name
+    let filename = Path::new(elf_file)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| anyhow!("Invalid ELF filename"))?;
+    
+    // Upload firmware file
+    client.upload_firmware_file(filename, elf_file).await
+        .map_err(|e| anyhow!("Failed to upload ELF file: {}", e))?;
+    
+    // Load remoteproc firmware
+    if !client.load_remoteproc(remoteproc_id, filename).await
+        .map_err(|e| anyhow!("Failed to load remoteproc firmware: {}", e))? {
+        return Err(anyhow!("Failed to load remoteproc firmware"));
+    }
+    
+    // Clean up uploaded file after completion
+//  client.remove_firmware(filename).await
+//      .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
+    
+    println!("Remoteproc firmware loaded successfully");
+    Ok(())
+}
+
+async fn remoteproc_start(client: &mut JellyFpgaClient, remoteproc_id: u64) -> Result<()> {
+    println!("Starting remoteproc{}...", remoteproc_id);
+    
+    if !client.start_remoteproc(remoteproc_id).await
+        .map_err(|e| anyhow!("Failed to start remoteproc: {}", e))? {
+        return Err(anyhow!("Failed to start remoteproc{}", remoteproc_id));
+    }
+    
+    println!("Remoteproc{} started successfully", remoteproc_id);
+    Ok(())
+}
+
+async fn remoteproc_stop(client: &mut JellyFpgaClient, remoteproc_id: u64) -> Result<()> {
+    println!("Stopping remoteproc{}...", remoteproc_id);
+    
+    if !client.stop_remoteproc(remoteproc_id).await
+        .map_err(|e| anyhow!("Failed to stop remoteproc: {}", e))? {
+        return Err(anyhow!("Failed to stop remoteproc{}", remoteproc_id));
+    }
+    
+    println!("Remoteproc{} stopped successfully", remoteproc_id);
+    Ok(())
+}
+
+async fn show_version_standalone(ip: &str) -> Result<()> {
+    println!("Client version: {}", env!("CARGO_PKG_VERSION"));
+    
+    let server_addr = format!("http://{}", ip);
+    match JellyFpgaClient::connect(server_addr).await {
+        Ok(mut client) => {
+            match client.get_version().await {
+                Ok(server_version) => {
+                    println!("Server version: {}", server_version);
+                },
+                Err(e) => {
+                    println!("Server version: (error: {})", e);
+                }
+            }
+        },
+        Err(e) => {
+            println!("Server version: (unable to connect: {})", e);
+        }
+    }
+    
     Ok(())
 }
