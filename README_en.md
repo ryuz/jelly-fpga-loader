@@ -139,3 +139,41 @@ jelly-fpga-loader dts2dtbo <dts file> <dtbo file>
 This command sends the dts file to the server and converts it to a dtbo file.
 
 If the --ip option is not specified, it connects to localhost (127.0.0.1:8051).
+
+
+### Loading Remoteproc Firmware
+
+```bash
+jelly-fpga-loader remoteproc load <elf file> --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+This command sends the elf file to the server and loads it to remoteproc.
+
+If the --remoteproc-id option is not specified, remoteproc0 is used.
+
+If the --ip option is not specified, it connects to localhost (127.0.0.1:8051).
+
+
+### Starting Remoteproc
+
+```bash
+jelly-fpga-loader remoteproc start --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+This command starts the server's remoteproc.
+
+If the --remoteproc-id option is not specified, remoteproc0 is used.
+
+If the --ip option is not specified, it connects to localhost (127.0.0.1:8051).
+
+### Stopping Remoteproc
+
+```bash
+jelly-fpga-loader remoteproc stop --remoteproc-id <id> --ip <FPGA server IP address>
+```
+
+This command stops the server's remoteproc.
+
+If the --remoteproc-id option is not specified, remoteproc0 is used.
+
+If the --ip option is not specified, it connects to localhost (127.0.0.1:8051).

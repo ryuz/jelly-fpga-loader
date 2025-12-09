@@ -78,8 +78,19 @@ enum Commands {
         /// Output DTBO file path
         dtbo_file: String,
     },
+    /// Remoteproc operations
+    Remoteproc {
+        #[command(subcommand)]
+        command: RemoteprocCommands,
+    },
+    /// Show version information
+    Version,
+}
+
+#[derive(Subcommand)]
+enum RemoteprocCommands {
     /// Load remoteproc firmware
-    RemoteprocLoad {
+    Load {
         /// ELF file path
         elf_file: String,
         /// Remoteproc ID (default: 0)
@@ -87,19 +98,17 @@ enum Commands {
         remoteproc_id: u64,
     },
     /// Start remoteproc
-    RemoteprocStart {
+    Start {
         /// Remoteproc ID (default: 0)
         #[arg(long, default_value = "0")]
         remoteproc_id: u64,
     },
     /// Stop remoteproc
-    RemoteprocStop {
+    Stop {
         /// Remoteproc ID (default: 0)
         #[arg(long, default_value = "0")]
         remoteproc_id: u64,
     },
-    /// Show version information
-    Version,
 }
 
 #[tokio::main]
@@ -138,14 +147,18 @@ async fn main() -> Result<()> {
         Commands::Dts2dtbo { dts_file, dtbo_file } => {
             dts2dtbo(&mut client, &dts_file, &dtbo_file).await?;
         },
-        Commands::RemoteprocLoad { elf_file, remoteproc_id } => {
-            remoteproc_load(&mut client, &elf_file, remoteproc_id).await?;
-        },
-        Commands::RemoteprocStart { remoteproc_id } => {
-            remoteproc_start(&mut client, remoteproc_id).await?;
-        },
-        Commands::RemoteprocStop { remoteproc_id } => {
-            remoteproc_stop(&mut client, remoteproc_id).await?;
+        Commands::Remoteproc { command } => {
+            match command {
+                RemoteprocCommands::Load { elf_file, remoteproc_id } => {
+                    remoteproc_load(&mut client, &elf_file, remoteproc_id).await?;
+                },
+                RemoteprocCommands::Start { remoteproc_id } => {
+                    remoteproc_start(&mut client, remoteproc_id).await?;
+                },
+                RemoteprocCommands::Stop { remoteproc_id } => {
+                    remoteproc_stop(&mut client, remoteproc_id).await?;
+                },
+            }
         },
         Commands::Version => {
             // Already handled before connection
@@ -482,8 +495,8 @@ async fn remoteproc_load(client: &mut JellyFpgaClient, elf_file: &str, remotepro
     }
     
     // Clean up uploaded file after completion
-//    client.remove_firmware(filename).await
-//        .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
+//  client.remove_firmware(filename).await
+//      .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
     
     println!("Remoteproc firmware loaded successfully");
     Ok(())
