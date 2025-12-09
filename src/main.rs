@@ -68,6 +68,26 @@ enum Commands {
         /// Output DTBO file path
         dtbo_file: String,
     },
+    /// Load remoteproc firmware
+    RemoteprocLoad {
+        /// ELF file path
+        elf_file: String,
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
+    /// Start remoteproc
+    RemoteprocStart {
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
+    /// Stop remoteproc
+    RemoteprocStop {
+        /// Remoteproc ID (default: 0)
+        #[arg(long, default_value = "0")]
+        remoteproc_id: u64,
+    },
 }
 
 #[tokio::main]
@@ -100,6 +120,15 @@ async fn main() -> Result<()> {
         },
         Commands::Dts2dtbo { dts_file, dtbo_file } => {
             dts2dtbo(&mut client, &dts_file, &dtbo_file).await?;
+        },
+        Commands::RemoteprocLoad { elf_file, remoteproc_id } => {
+            remoteproc_load(&mut client, &elf_file, remoteproc_id).await?;
+        },
+        Commands::RemoteprocStart { remoteproc_id } => {
+            remoteproc_start(&mut client, remoteproc_id).await?;
+        },
+        Commands::RemoteprocStop { remoteproc_id } => {
+            remoteproc_stop(&mut client, remoteproc_id).await?;
         },
     }
     
@@ -409,5 +438,56 @@ async fn dts2dtbo(client: &mut JellyFpgaClient, dts_file: &str, dtbo_file: &str)
         .map_err(|e| anyhow!("Failed to write DTBO file '{}': {}", dtbo_file, e))?;
     
     println!("DTS to DTBO conversion completed successfully");
+    Ok(())
+}
+
+async fn remoteproc_load(client: &mut JellyFpgaClient, elf_file: &str, remoteproc_id: u64) -> Result<()> {
+    println!("Loading remoteproc{}: {}", remoteproc_id, elf_file);
+    
+    // Extract filename for the firmware name
+    let filename = Path::new(elf_file)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| anyhow!("Invalid ELF filename"))?;
+    
+    // Upload firmware file
+    client.upload_firmware_file(filename, elf_file).await
+        .map_err(|e| anyhow!("Failed to upload ELF file: {}", e))?;
+    
+    // Load remoteproc firmware
+    if !client.load_remoteproc(remoteproc_id, filename).await
+        .map_err(|e| anyhow!("Failed to load remoteproc firmware: {}", e))? {
+        return Err(anyhow!("Failed to load remoteproc firmware"));
+    }
+    
+    // Clean up uploaded file after completion
+    client.remove_firmware(filename).await
+        .map_err(|e| anyhow!("Failed to delete ELF file from firmware: {}", e))?;
+    
+    println!("Remoteproc firmware loaded successfully");
+    Ok(())
+}
+
+async fn remoteproc_start(client: &mut JellyFpgaClient, remoteproc_id: u64) -> Result<()> {
+    println!("Starting remoteproc{}...", remoteproc_id);
+    
+    if !client.start_remoteproc(remoteproc_id).await
+        .map_err(|e| anyhow!("Failed to start remoteproc: {}", e))? {
+        return Err(anyhow!("Failed to start remoteproc{}", remoteproc_id));
+    }
+    
+    println!("Remoteproc{} started successfully", remoteproc_id);
+    Ok(())
+}
+
+async fn remoteproc_stop(client: &mut JellyFpgaClient, remoteproc_id: u64) -> Result<()> {
+    println!("Stopping remoteproc{}...", remoteproc_id);
+    
+    if !client.stop_remoteproc(remoteproc_id).await
+        .map_err(|e| anyhow!("Failed to stop remoteproc: {}", e))? {
+        return Err(anyhow!("Failed to stop remoteproc{}", remoteproc_id));
+    }
+    
+    println!("Remoteproc{} stopped successfully", remoteproc_id);
     Ok(())
 }

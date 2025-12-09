@@ -455,8 +455,8 @@ checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
 name = "jelly-fpga-client"
-version = "0.1.0"
-source = "git+https://github.com/ryuz/jelly-fpga-client-rs.git?tag=v0.1.0#650f776ca32b1c954b80e0bc688a20ac392137b6"
+version = "0.1.1"
+source = "git+https://github.com/ryuz/jelly-fpga-client-rs.git?tag=v0.1.1#0333bf2202c7fdc262a105039b09278108230d0a"
 dependencies = [
  "futures-core",
  "prost",
